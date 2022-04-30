@@ -1,0 +1,245 @@
+---
+title: "Untitled"
+author: "Tao"
+date: "4/23/2022"
+output: html_document
+---
+
+Step 1: read the list of all watersheds
+step 2: read the list of stream temp stations. The processed data is "st_gage.Rdata"
+Step 3: read canopy stats
+Step 4: read air temp
+Step 5: download the 2010-2021 stream temp data. The processed data is"meanAugT_idmt_df.Rdata"
+
+# Load package
+```{r}
+library("foreign")
+# install.packages("dataRetrieval")
+library("dataRetrieval")
+# install.packages("gbm")
+library("gbm")
+# install.packages("caret")
+library(caret)
+```
+
+#Step 1: read the list of all watersheds
+```{r}
+setwd("C:/Users/taohuang/Documents/Tao/Data/boundaries_shapefiles_by_aggeco/boundaries-shapefiles-by-aggeco")
+ws<-read.dbf("bas_ref_all.dbf") 
+ws$GAGE_ID<-as.character(ws$GAGE_ID)
+ws
+```
+
+```{r}
+#setwd("C:/Users/taohuang/Downloads")
+
+#idaho
+st<-read.csv("id_st.txt",sep="\t")
+st_2<-st[2:dim(st)[1],]
+dim(st_2)
+st_2
+#montana
+st_mt<-read.csv("mt_st.txt",sep="\t")
+st_mt2<-st_mt[2:dim(st_mt)[1],]
+dim(st_mt2)
+st_mt2
+
+#wy
+st_wy<-read.csv("wy_st.txt",sep="\t")
+st_wy2<-st_wy[2:dim(st_wy)[1],]
+dim(st_wy2)
+st_wy2
+
+all<-c(st_2$site_no, st_mt2$site_no, st_wy2$site_no)
+st_all<-unique(all)
+length(all)
+length(st_all)
+```
+
+```{r}
+st_all_gage<-st_all[st_all %in% ws$GAGE_ID]
+st_all_gage
+save(st_all_gage,file="st_gage_all.Rdata")
+```
+
+```{r}
+#create empty tables
+meanAugT_df<-data.frame(
+  agency_cd= " ",
+  site_no="",
+  Date=as.Date("2000-01-01",format="%Y-%m-%d"),
+  X_00010_00001=0,
+  X_00010_00001_cd=0,
+  X_00010_00003=0,
+  X_00010_00003_cd= "",
+  X_00060_00003=0,    
+  X_00060_00003_cd= "",
+  yr="",
+  mo=0, 
+  ele=0
+  )
+
+for (id in st_all_gage) {
+  siteNumber <-  id 
+  parameterCd <- c("00010","00060") 
+  #00060: Discharge, cubic feet per second
+  #00010	Physical	Temperature, water, degrees Celsius	
+  ChoptankInfo <- readNWISsite(siteNumber)
+ #ChoptankInfo$alt_va : Gage datum feet above NGVD29
+  #statCd <- c("00003") 
+  #00001 max
+  #00003 mean
+  startDate <- "2009-07-01"
+  endDate <- "2021-09-01"
+  meanT <-readNWISdv(siteNumber, parameterCd,startDate, endDate, statCd= c("00001","00003"))
+#  maxT  <-readNWISdv(siteNumber, parameterCd,startDate, endDate, statCd= "00001")
+  if (dim(meanT )[2]>5){
+    meanT$yr<- format(meanT$Date, format = "%Y") 
+    meanT$mo<-as.numeric(format(meanT$Date, format = "%m"))
+    meanAugT<-meanT[meanT$mo==8,c("agency_cd","site_no","Date","X_00010_00001","X_00010_00001_cd","X_00010_00003","X_00010_00003_cd","X_00060_00003","X_00060_00003_cd","yr","mo"  )]
+    meanAugT$ele<-ChoptankInfo$alt_va
+    meanAugT_df <-rbind(meanAugT_df,meanAugT)
+    print(    paste(id,dim(meanT )[1],Sys.time() ) )
+
+  }
+    # if (dim(maxT )[2]>5){
+    # maxT$yr<- format(maxT$Date, format = "%Y") 
+    # maxT$mo<-as.numeric(format(maxT$Date, format = "%m"))
+    # maxAugT<-maxT[maxT$mo==8,c("agency_cd","site_no","Date","X_00010_00001","X_00010_00001_cd","X_00060_00001","X_00060_00001_cd","yr","mo"  )]
+    # maxAugT$ele<-ChoptankInfo$alt_va
+    # maxAugT_df <-rbind(maxAugT_df,maxAugT)
+    # print(Sys.time())
+    # save(maxAugT_df,file="maxAugT_idmt_df.Rdata")
+    # }
+  
+}
+
+save(meanAugT_df,file="meanAugT_all_df.Rdata")
+
+```
+
+----------start from here----------
+
+```{r}
+load("st_gage_all.Rdata")
+load("meanAugT_all_df.Rdata")
+```
+
+```{r}
+meanAugT_df<-meanAugT_df[-1,]
+
+meanAugT_df<-meanAugT_df[!meanAugT_df$site_no=="06190540" ,]
+
+```
+
+```{r}
+unique(meanAugT_df$site_no)
+#max temp
+summary(meanAugT_df$X_00010_00001) 
+length( meanAugT_df$X_00010_00001[!is.na(meanAugT_df$X_00010_00001)])
+#mean temp
+summary(meanAugT_df$X_00010_00003) 
+length( meanAugT_df$X_00010_00003[!is.na(meanAugT_df$X_00010_00003)])
+
+```
+
+```{r}
+head(meanAugT_df)
+plot(meanAugT_df$ele,meanAugT_df$X_00010_00001 )
+
+
+```
+
+# split the data into ref and non-ref streams
+```{r}
+g<-read.dbf("C:/Users/taohuang/Documents/Tao/Data/gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.dbf")
+g$STAID<-as.character(g$STAID)
+unique(meanAugT_df$site_no)%in% g$STAID
+meanAugT_df2<-merge(g,meanAugT_df,by.x="STAID",by.y="site_no")
+meanAugT_df2<-meanAugT_df2[!is.na(meanAugT_df2$X_00010_00001),]
+head(meanAugT_df2)
+table(meanAugT_df2$CLASS)
+plot(meanAugT_df2$DRAIN_SQKM, meanAugT_df2$X_00010_00001)
+plot(meanAugT_df2$X_00060_00003 , meanAugT_df2$X_00010_00001)
+plot(meanAugT_df2$DRAIN_SQKM, meanAugT_df2$ele )
+summary(meanAugT_df2)
+```
+
+```{r}
+head(meanAugT_df2)
+head(canopy)
+meanAugT_df2<-merge(meanAugT_df2,canopy,by.x =  "STAID",by.y =  "GAGE_ID")
+dim(meanAugT_df2)
+```
+
+
+```{r}
+canopy<-read.dbf("C:/Users/taohuang/Documents/Tao/Data/nlcd_2011_treecanopy_2019_08_31/tree_2011_ref_all.dbf")
+canopy$GAGE_ID<-as.character(canopy$GAGE_ID)
+head(canopy)
+```
+
+# read air temp
+
+
+```{r}
+plot(meanAugT_df2$X_mean,meanAugT_df2$X_00010_00001)
+```
+
+
+```{r}
+summary(lm(meanAugT_df2$X_00010_00001~meanAugT_df2$ele+meanAugT_df2$X_00060_00003+meanAugT_df2$LAT_GAGE+meanAugT_df2$X_mean))
+```
+
+# Train and Test data
+```{r}
+set.seed(0)           # set seed for generating random data.
+
+# createDataPartition() function from the caret package to split the original dataset into a training and testing set and split data into training (80%) and testing set (20%)
+parts = createDataPartition( meanAugT_df2$X_00010_00001, p = .8, list = F)
+train =meanAugT_df2[parts,c("LAT_GAGE","X_00010_00001","X_00060_00003","ele","X_mean") ]
+test = meanAugT_df2[-parts,c("LAT_GAGE","X_00010_00001","X_00060_00003","ele","X_mean")  ]
+
+test_x = test[, -2] # feature and target array
+test_y = test[, 2] 
+```
+
+```{r}
+model_gbm = gbm(train$X_00010_00001  ~.,
+                data = train,
+                distribution = "gaussian",
+                cv.folds = 10,
+                shrinkage = .01,
+                n.minobsinnode = 10,
+                n.trees = 500)
+ 
+print(model_gbm)
+
+summary(model_gbm)
+```
+
+```{r}
+pred_y = predict.gbm(model_gbm, test_x)
+pred_y
+```
+
+```{r}
+residuals = test_y - pred_y
+RMSE = sqrt(mean(residuals^2))
+cat('The root mean square error of the test data is ', round(RMSE,3),'\n')
+
+y_test_mean = mean(test_y)
+# Calculate total sum of squares
+tss =  sum((test_y - y_test_mean)^2 )
+# Calculate residual sum of squares
+rss =  sum(residuals^2)
+# Calculate R-squared
+rsq  =  1 - (rss/tss)
+cat('The R-square of the test data is ', round(rsq,3), '\n')
+
+# visualize the model, actual and predicted data
+x_ax = 1:length(pred_y)
+plot(x_ax, test_y, col="blue", pch=20, cex=.9)
+lines(x_ax, pred_y, col="red", pch=20, cex=.9) 
+```
+
