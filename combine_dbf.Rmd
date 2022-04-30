@@ -22,9 +22,7 @@ air_temp
 ```
 
 ```{r}
-setwd("C:/Users/taohuang/Downloads/prism-main/output")
-
-d<-read.dbf("PRISM_tmax_stable_4kmD2_20210802.dbf")
+setwd("C:/Users/taohuang/Downloads/prism-main/output_all")
 
 for (yr in c(2010:2021)) {
   for (day in c(0801:0830)) {
