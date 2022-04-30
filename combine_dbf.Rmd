@@ -17,8 +17,8 @@ library("foreign")
 air_temp<-data.frame( GAGE_ID<-as.factor("00000"),   ZONE_CODE<-as.integer(0) , COUNT<-as.integer(0),   AREA<-as.numeric(0),      MIN<-as.numeric(0),       MAX<-as.numeric(0),       RANGE<-as.numeric(0),     MEAN<-as.numeric(0),     STD<-as.numeric(0),     SUM<-as.numeric(0)         )
 
 colnames(air_temp)<-c("GAGE_ID" ,"ZONE_CODE","COUNT"   ,"AREA"  ,  "MIN"     ,"MAX"     ,"RANGE"   ,"MEAN"    ,"STD"      ,"SUM")
+air_temp$date<-as.POSIXct("19000101",format="%Y%m%d")
 air_temp
-
 ```
 
 ```{r}
@@ -26,14 +26,18 @@ setwd("C:/Users/taohuang/Downloads/prism-main/output")
 
 d<-read.dbf("PRISM_tmax_stable_4kmD2_20210802.dbf")
 
-for (day in c(0801:0830)) {
+for (yr in c(2010:2021)) {
+  for (day in c(0801:0830)) {
 #  print(  paste("PRISM_tmax_stable_4kmD2_20210",day,".dbf",sep = "")  )
-  
-  temp<-read.dbf( paste("PRISM_tmax_stable_4kmD2_20210",day,".dbf",sep = "")  )
-  
-  air_temp<-rbind(air_temp,temp)
-  
+    temp<-read.dbf( paste("PRISM_tmax_stable_4kmD2_",yr,"0",day,".dbf",sep = "")  )
+    temp$date<-as.POSIXct( paste(yr,"0",day,sep = "") ,format="%Y%m%d")
+    air_temp<-rbind(air_temp,temp)
+  }
 }
+```
 
+```{r}
+setwd("C:/Users/taohuang/Downloads/prism-main")
+save(air_temp,file = "air_temp.Rdata")
 ```
 
