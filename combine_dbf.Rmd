@@ -1,0 +1,39 @@
+---
+title: "combine_dbf"
+author: "Tao"
+date: "4/30/2022"
+output: html_document
+---
+
+1. create a dbf to store data
+2. read each date's dbf in the for loop
+2. rbind
+
+```{r}
+library("foreign")
+```
+
+```{r}
+air_temp<-data.frame( GAGE_ID<-as.factor("00000"),   ZONE_CODE<-as.integer(0) , COUNT<-as.integer(0),   AREA<-as.numeric(0),      MIN<-as.numeric(0),       MAX<-as.numeric(0),       RANGE<-as.numeric(0),     MEAN<-as.numeric(0),     STD<-as.numeric(0),     SUM<-as.numeric(0)         )
+
+colnames(air_temp)<-c("GAGE_ID" ,"ZONE_CODE","COUNT"   ,"AREA"  ,  "MIN"     ,"MAX"     ,"RANGE"   ,"MEAN"    ,"STD"      ,"SUM")
+air_temp
+
+```
+
+```{r}
+setwd("C:/Users/taohuang/Downloads/prism-main/output")
+
+d<-read.dbf("PRISM_tmax_stable_4kmD2_20210802.dbf")
+
+for (day in c(0801:0830)) {
+#  print(  paste("PRISM_tmax_stable_4kmD2_20210",day,".dbf",sep = "")  )
+  
+  temp<-read.dbf( paste("PRISM_tmax_stable_4kmD2_20210",day,".dbf",sep = "")  )
+  
+  air_temp<-rbind(air_temp,temp)
+  
+}
+
+```
+
