@@ -1,0 +1,71 @@
+---
+title: "combine_dbf"
+author: "Tao"
+date: "5/2/2022"
+output: html_document
+---
+
+1. create a dbf to store data
+2. read each date's dbf in the for loop
+3. rbind
+4. rbind non_ref_west_mtn and ref_all
+
+```{r}
+library("foreign")
+```
+
+```{r}
+air_temp<-data.frame( GAGE_ID<-as.factor("00000"),   ZONE_CODE<-as.integer(0) , COUNT<-as.integer(0),   AREA<-as.numeric(0),      MIN<-as.numeric(0),       MAX<-as.numeric(0),       RANGE<-as.numeric(0),     MEAN<-as.numeric(0),     STD<-as.numeric(0),     SUM<-as.numeric(0)         )
+
+colnames(air_temp)<-c("GAGE_ID" ,"ZONE_CODE","COUNT"   ,"AREA"  ,  "MIN"     ,"MAX"     ,"RANGE"   ,"MEAN"    ,"STD"      ,"SUM")
+air_temp$date<-as.POSIXct("19000101",format="%Y%m%d")
+air_temp
+```
+
+```{r}
+setwd("C:/Users/taohuang/Downloads/prism-main/output_all")
+
+for (yr in c(2010:2021)) {
+  for (day in c(0801:0830)) {
+#  print(  paste("PRISM_tmax_stable_4kmD2_20210",day,".dbf",sep = "")  )
+    temp<-read.dbf( paste("PRISM_tmax_stable_4kmD2_",yr,"0",day,".dbf",sep = "")  )
+    temp$date<-as.POSIXct( paste(yr,"0",day,sep = "") ,format="%Y%m%d")
+    air_temp<-rbind(air_temp,temp)
+  }
+}
+```
+
+
+```{r}
+air_temp_west_mtn<-data.frame( GAGE_ID<-as.factor("00000"),   ZONE_CODE<-as.integer(0) , COUNT<-as.integer(0),   AREA<-as.numeric(0),      MIN<-as.numeric(0),       MAX<-as.numeric(0),       RANGE<-as.numeric(0),     MEAN<-as.numeric(0),     STD<-as.numeric(0),     SUM<-as.numeric(0)         )
+
+colnames(air_temp_west_mtn)<-c("GAGE_ID" ,"ZONE_CODE","COUNT"   ,"AREA"  ,  "MIN"     ,"MAX"     ,"RANGE"   ,"MEAN"    ,"STD"      ,"SUM")
+air_temp_west_mtn$date<-as.POSIXct("19000101",format="%Y%m%d")
+air_temp_west_mtn
+```
+
+
+```{r}
+setwd("C:/Users/taohuang/Downloads/prism-main/output")
+
+for (yr in c(2010:2021)) {
+  for (day in c(0801:0830)) {
+    temp<-read.dbf( paste("PRISM_tmax_stable_4kmD2_",yr,"0",day,".dbf",sep = "")  )
+    temp$date<-as.POSIXct( paste(yr,"0",day,sep = "") ,format="%Y%m%d")
+    air_temp_west_mtn<-rbind(air_temp_west_mtn,temp)
+  }
+}
+```
+
+```{r}
+air_temp_west_mtn_all<-rbind(air_temp_west_mtn,air_temp)
+dim(air_temp_west_mtn_all)
+dim(air_temp)
+```
+
+
+```{r}
+setwd("C:/Users/taohuang/Downloads/prism-main")
+save(air_temp_west_mtn_all,file = "air_temp_all_west_mtn.Rdata")
+```
+
