@@ -40,5 +40,7 @@ ws_dem<-dem_df %>%
   summarize(ws_dem = mean(MEAN_dem, na.rm = TRUE))
 ws_dem
 
+save(ws_dem, file="ws_dem.Rdata")
+
 ```
 
