@@ -1,0 +1,44 @@
+---
+title: "combined_DEM"
+author: "Tao"
+date: "5/6/2022"
+output: html_document
+---
+
+```{r}
+library("foreign")
+library("dplyr") 
+
+setwd("C:/Users/taohuang/Downloads/prism-main")
+
+dbf<-list.files(pattern="\\.dbf" )
+#pattern =   "^[NHDPlus]" & 
+
+dem_df<-data.frame(GAGE_ID= as.character("0"), MEAN_dem=0 , MIN=0)
+
+for (f in dbf         )
+{
+  print(f)
+  dem<-read.dbf(f) # centimeters.
+  dem$MEAN_dem<-dem$MEAN/100 #m
+  dem<-dem[dem$MAJORITY>0,]
+  dem$GAGE_ID<-as.character(dem$GAGE_ID)
+  dem_df<-rbind(dem_df,dem[,c("GAGE_ID","MEAN_dem", "MIN")])
+  dem_df<-dem_df[!dem_df$GAGE_ID=="0",]
+}
+
+dem_df
+
+head(dem_df)
+
+summary(dem_df)
+
+table(dem_df$GAGE_ID)
+
+ws_dem<-dem_df %>%
+  group_by(GAGE_ID) %>%
+  summarize(ws_dem = mean(MEAN_dem, na.rm = TRUE))
+ws_dem
+
+```
+
