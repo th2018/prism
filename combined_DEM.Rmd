@@ -21,7 +21,7 @@ for (f in dbf         )
   print(f)
   dem<-read.dbf(f) # centimeters.
   dem$MEAN_dem<-dem$MEAN/100 #m
-  dem<-dem[dem$MAJORITY>0,]
+#  dem<-dem[dem$MAJORITY>0,]
   dem$GAGE_ID<-as.character(dem$GAGE_ID)
   dem_df<-rbind(dem_df,dem[,c("GAGE_ID","MEAN_dem", "MIN")])
   dem_df<-dem_df[!dem_df$GAGE_ID=="0",]
@@ -35,9 +35,11 @@ summary(dem_df)
 
 table(dem_df$GAGE_ID)
 
+boxplot(dem_df$MEAN_dem~dem_df$GAGE_ID)
+
 ws_dem<-dem_df %>%
   group_by(GAGE_ID) %>%
-  summarize(ws_dem = mean(MEAN_dem, na.rm = TRUE))
+  summarise(ws_dem = mean(MEAN_dem, na.rm = TRUE))
 ws_dem
 
 save(ws_dem, file="ws_dem.Rdata")
